@@ -18,22 +18,28 @@
                 <div id="contact">
                   <h3>PollAssist'19 Database Entry</h3>
                   <fieldset>
-                    <input id="latitude" placeholder="Latitude" type="number" tabindex="1" step = ".0000000001" required>
+                    <input id="latitude" placeholder="*Latitude(Upto 6 decimal place)" type="number" tabindex="1" step = ".0000000001" required>
                   </fieldset>
                   <fieldset>  
-                    <input id="longitude" placeholder="Longitude" type="number" tabindex="2" step = ".00000000001" required>
+                    <input id="longitude" placeholder="*Longitude(Upto 6 decimal place)" type="number" tabindex="2" step = ".00000000001" required>
                   </fieldset>
                   <fieldset>
-                    <input id="number" placeholder="Booth Number" type="number" tabindex="3" required>
+                    <input id="number" placeholder="*Booth Number{Ex. 1234}" type="number" tabindex="3" required>
                   </fieldset>
                   <fieldset>
-                    <input id="status" placeholder="Status" type="text" tabindex="4" required>
+                    <input id="status" placeholder="*Status(Critical/Normal/Sensitive)" type="text" tabindex="4" required>
                   </fieldset>
                   <fieldset>
-                    <input id="title" type ="text" id="title" placeholder="Title" tabindex="5" required></inout>
+                    <input id="address" placeholder="*Address" type="text" tabindex="5" required>
                   </fieldset>
                   <fieldset>
-                    <center><button class="butt" onclick="entrys()" name="submit" >Submit</button></center>
+                    <input id="village" placeholder="*Village" type="text" tabindex="6" required>
+                  </fieldset>
+                  <fieldset>
+                    <input id="title" placeholder="Title" type="text" tabindex="7">
+                  </fieldset>
+                  <fieldset>
+                    <center><button id="hit" class="butt" onclick="entrys()" name="submit" >Submit</button></center>
                   </fieldset>
                 </div>
         </div>
@@ -41,37 +47,88 @@
 <script>
        function entrys()
 {
+
+    var hit = document.getElementById('hit');
+    buttonDisable(hit);
+  
     var l = document.getElementById('latitude').value;
-    var latitude = parseFloat(l);
     var lg = document.getElementById('longitude').value;
-    var longitude = parseFloat(lg);
     var number = document.getElementById('number').value;
     var status = document.getElementById('status').value;
-    var boothnum = parseInt(number);
-    console.log('boothnum');
     var title = document.getElementById('title').value;
+    var address = document.getElementById('address').value;
+    var village = document.getElementById('village').value;
 
-    if(entrys == "")
-    {
-        window.alert('Please Fill in the data');
-    }
-    else
-    {
-        firebase.database().ref('LoadPlace/' + number).set({
-            l : latitude,
-            lg : longitude,
-            number : boothnum,
-            status : status,
-            title: title
+    
+
+    if(l!=""&&lg!=""&&number!=""&&status!=""&&address!=""){
+      var latitude = parseFloat(l);
+      var longitude = parseFloat(lg);
+      var boothnum = parseInt(number);
+      
+      if(title == "") title = "Booth No. "+number;
+      else title = title + " ("+number+")";
+
+      var loadPlace = { l : latitude, lg : longitude, number : boothnum,
+            status : status, title: title };
+      var place = { addInfo: number,description: address,name: village,
+            snippet: status,title: title,village: village};
+      
+      var key = l.replace(".","_")+"loc"+lg.replace(".","_");
+
+        firebase.database().ref('places/'+key).once('value')
+              .then(function(snapshot) {
+
+              if(!snapshot.exists()){
+                  window.alert(loadPlace.title);
+                  writeNewLoadPlace(loadPlace,number);
+                  firebase.database().ref('places/'+key).set(place);
+                  window.alert('Successfully Sent!');
+                  setFieldEmpty();
+                  buttonEnable(hit);
+              }else{
+                window.alert("Exist");
+                writeNewLoadPlace(loadPlace,number);
+                var x = snapshot.val();
+                var addInfo = x.addInfo;
+                firebase.database().ref('places/'+key+'/addInfo').set(addInfo+","+number);
+                window.alert('Successfully Sent!');
+                setFieldEmpty();
+                buttonEnable(hit); 
+              }
+
         });
-        window.alert('Successfully Sent!');
+
+    }else{
+      window.alert("Please Fill all Required Field.");
+      buttonEnable(hit);
+    }
+    
+}
+
+    function writeNewLoadPlace(loadPlace,number){
+      firebase.database().ref('LoadPlace/' + number).set(loadPlace);
+    }
+
+    function buttonEnable(hit){
+      hit.disable = false;
+      hit.style.background = '#000000';
+    }
+
+    function buttonDisable(hit){
+      hit.disable = true;
+      hit.style.background = "#ff0000";
+    }
+
+    function setFieldEmpty(){
         document.getElementById('latitude').value = "";
         document.getElementById('longitude').value = "";
         document.getElementById('number').value = "";
         document.getElementById('status').value = "";
         document.getElementById('title').value = "";
+        document.getElementById('address').value ="";
+        document.getElementById('village').value = "";
     }
-}
 </script>
 </body>
 </html>
